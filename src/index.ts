@@ -1,0 +1,37 @@
+import 'dotenv/config';
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import customerRoutes from './routes/customers';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const prisma = new PrismaClient();
+
+app.use(express.json());
+
+// --- Customer API routes ---
+app.use('/api/customers', customerRoutes);
+
+// --- Healthcheck route ---
+app.get('/healthz', async (req, res) => {
+  let dbStatus = 'unknown';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'available';
+  } catch (err) {
+    dbStatus = 'unavailable';
+  }
+  res.status(dbStatus === 'available' ? 200 : 503).json({
+    status: 'ok',
+    db: dbStatus,
+    service: 'up'
+  });
+});
+
+app.get('/', (req, res) => {
+  res.send('Shopifake B2C Customer Microservice is running.');
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 B2C Microservice started on http://localhost:${PORT}`);
+});
