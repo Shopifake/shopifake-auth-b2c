@@ -1,7 +1,6 @@
 import request from 'supertest';
 import express from 'express';
 import customerRoutes from './customers';
-import { PrismaClient } from '@prisma/client';
 
 jest.mock('@prisma/client', () => {
   return {

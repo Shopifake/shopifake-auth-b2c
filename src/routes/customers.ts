@@ -5,7 +5,9 @@ import { checkAuth } from '../middleware/checkAuth';
 const prisma = new PrismaClient();
 const router = Router();
 
-// --- Logged-in Customer Profile Routes ---
+// --- IMPORTANT: Routes spécifiques AVANT les routes paramétrées ---
+
+// Routes '/me' en premier
 router.get('/me', checkAuth, async (req: Request, res: Response) => {
   try {
     const myProfile = await prisma.customer.findUnique({
@@ -39,7 +41,7 @@ router.put('/me', checkAuth, async (req: Request, res: Response) => {
   }
 });
 
-// --- Admin-like Endpoints (no roles) ---
+// --- Routes générales (liste et création) ---
 router.get('/', async (req: Request, res: Response) => {
   try {
     const customers = await prisma.customer.findMany();
@@ -75,6 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// --- Routes avec :id EN DERNIER ---
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
