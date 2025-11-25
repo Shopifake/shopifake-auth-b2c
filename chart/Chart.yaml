@@ -1,0 +1,10 @@
+apiVersion: v2
+name: shopifake-auth-b2c
+description: Shopifake Auth B2C Service - Customer Authentication
+
+type: application
+
+version: 1.0.0
+
+appVersion: "1.0.0"
+
