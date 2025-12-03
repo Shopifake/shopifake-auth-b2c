@@ -14,8 +14,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Mount routes
-app.use('', authRoutes);
-app.use('/customers', customerRoutes);
+app.use('/api/auth-b2c', authRoutes);
+app.use('/api/auth-b2c/customers', customerRoutes);
 
 // --- Healthcheck route ---
 app.get('/healthz', async (req, res) => {
