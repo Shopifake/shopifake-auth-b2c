@@ -11,14 +11,14 @@ const requireAuth = async (req: Request, res: Response, next: Function) => {
   try {
     const token = req.cookies.b2c_accessToken;
     if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
     const decoded = jwt.verify(token, ACCESS_SECRET) as any;
     (req as any).userId = decoded.id;
     next();
   } catch  {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
 
