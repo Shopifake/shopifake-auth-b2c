@@ -9,9 +9,9 @@ const ACCESS_SECRET = process.env.BETTER_AUTH_SECRET!;
 
 // Helper to set access token cookie (no refresh token for B2C)
 const setAccessToken = (res: Response, userId: string, email: string) => {
-  const accessToken = jwt.sign({ id: userId, email }, ACCESS_SECRET, { expiresIn: '24h' });
+  const b2c_accessToken = jwt.sign({ id: userId, email }, ACCESS_SECRET, { expiresIn: '24h' });
 
-  res.cookie('b2c_accessToken', accessToken, {
+  res.cookie('b2c_accessToken', b2c_accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
@@ -80,7 +80,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // POST /logout
 router.post('/logout', async (req: Request, res: Response) => {
   try {
-    res.clearCookie('accessToken').json({ message: 'Logged out successfully' });
+    res.clearCookie('b2c_accessToken').json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -89,7 +89,7 @@ router.post('/logout', async (req: Request, res: Response) => {
 // GET /me
 router.get('/me', async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.b2c_accessToken;
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
     const decoded = jwt.verify(token, ACCESS_SECRET) as any;

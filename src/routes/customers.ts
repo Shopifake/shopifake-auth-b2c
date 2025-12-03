@@ -9,7 +9,7 @@ const ACCESS_SECRET = process.env.BETTER_AUTH_SECRET!;
 // Middleware to check authentication
 const requireAuth = async (req: Request, res: Response, next: Function) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.b2c_accessToken;
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

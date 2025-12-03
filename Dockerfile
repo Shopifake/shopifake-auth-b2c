@@ -6,7 +6,10 @@ COPY package*.json ./
 # ---- Development image ----
 FROM base AS dev
 ENV PORT=3000
+ENV DATABASE_URL=postgresql://postgres:postgres@shopifake-postgres:5432/shopifake
+COPY prisma ./prisma
 RUN npm install --production=false
+RUN npx prisma generate
 CMD ["npm", "run", "dev"]
 
 # ---- Build image ----
