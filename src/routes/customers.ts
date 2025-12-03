@@ -1,121 +1,72 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { checkAuth } from '../middleware/checkAuth';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 const router = Router();
+const ACCESS_SECRET = process.env.BETTER_AUTH_SECRET!;
 
-// --- IMPORTANT: Routes spécifiques AVANT les routes paramétrées ---
+// Middleware to check authentication
+const requireAuth = async (req: Request, res: Response, next: Function) => {
+  try {
+    const token = req.cookies.accessToken;
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-// Routes '/me' en premier
-router.get('/me', checkAuth, async (req: Request, res: Response) => {
+    const decoded = jwt.verify(token, ACCESS_SECRET) as any;
+    (req as any).userId = decoded.id;
+    next();
+  } catch  {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+};
+
+// Get own profile
+router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
     const myProfile = await prisma.customer.findUnique({
-      where: { id: req.user!.id }
+      where: { id: (req as any).userId }
     });
+    
     if (!myProfile) {
-      return res.status(404).json({ error: 'Profile not found.' });
+      return res.status(404).json({ error: 'Profile not found' });
     }
-    res.json(myProfile);
+    
+    const { password_hash, ...profileWithoutPassword } = myProfile;
+    res.json(profileWithoutPassword);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 });
 
-router.put('/me', checkAuth, async (req: Request, res: Response) => {
+// Update own profile
+router.put('/me', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { lastName, firstName, telephone, address, preferences } = req.body;
+    const { lastName, firstName, telephone, address } = req.body;
+    
     const updatedProfile = await prisma.customer.update({
-      where: { id: req.user!.id },
+      where: { id: (req as any).userId },
       data: {
         lastName,
         firstName,
         telephone,
         address,
-        preferences
       }
     });
-    res.json(updatedProfile);
+    
+    const { password_hash, ...profileWithoutPassword } = updatedProfile;
+    res.json(profileWithoutPassword);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 });
 
-// --- Routes générales (liste et création) ---
-router.get('/', async (req: Request, res: Response) => {
+// Delete own account
+router.delete('/me', requireAuth, async (req: Request, res: Response) => {
   try {
-    const customers = await prisma.customer.findMany();
-    res.json(customers);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.post('/', async (req: Request, res: Response) => {
-  try {
-    const { email, password_hash, lastName, firstName, telephone, address, preferences } = req.body;
-    if (!email || !password_hash) {
-      return res.status(400).json({ error: 'Missing required fields: email, password_hash' });
-    }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-    const newCustomer = await prisma.customer.create({
-      data: {
-        email,
-        password_hash,
-        lastName,
-        firstName,
-        telephone,
-        address,
-        preferences
-      }
-    });
-    res.status(201).json(newCustomer);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-// --- Routes avec :id EN DERNIER ---
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const customer = await prisma.customer.findUnique({ where: { id } });
-    if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-    res.json(customer);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.put('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { lastName, firstName, telephone, address, preferences } = req.body;
-    const updatedCustomer = await prisma.customer.update({
-      where: { id },
-      data: {
-        lastName,
-        firstName,
-        telephone,
-        address,
-        preferences
-      }
-    });
-    res.json(updatedCustomer);
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.delete('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    await prisma.customer.delete({ where: { id } });
-    res.status(200).json({ message: 'Customer successfully deleted' });
+    await prisma.customer.delete({ where: { id: (req as any).userId } });
+    res.status(200).json({ message: 'Account successfully deleted' });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }

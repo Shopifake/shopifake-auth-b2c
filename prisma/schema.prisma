@@ -14,11 +14,10 @@ model Customer {
   id            String   @id @default(uuid())
   email         String   @unique
   password_hash String
-  lastName           String?
-  firstName        String?
+  lastName      String?
+  firstName     String?
   telephone     String?
   address       String?
-  preferences   Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

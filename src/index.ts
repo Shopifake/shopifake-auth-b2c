@@ -1,17 +1,21 @@
 import './instrumentation';
 import 'dotenv/config';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { PrismaClient } from '@prisma/client';
 import customerRoutes from './routes/customers';
+import authRoutes from './auth';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient();
 
 app.use(express.json());
+app.use(cookieParser());
 
-// --- Customer API routes ---
-app.use('/api/customers', customerRoutes);
+// Mount routes
+app.use('', authRoutes);
+app.use('/customers', customerRoutes);
 
 // --- Healthcheck route ---
 app.get('/healthz', async (req, res) => {
