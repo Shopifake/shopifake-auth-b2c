@@ -11,10 +11,15 @@ const ACCESS_SECRET = process.env.BETTER_AUTH_SECRET!;
 const setAccessToken = (res: Response, userId: string, email: string) => {
   const b2c_accessToken = jwt.sign({ id: userId, email }, ACCESS_SECRET, { expiresIn: '24h' });
 
+  // For cross-origin cookies (frontend on *.lvh.me), we need sameSite: 'none' and secure: true
+  // Some browsers allow secure: true on localhost/.lvh.me even without HTTPS
+  const isSecure = process.env.COOKIE_SECURE !== 'false'; // Default to true, can be overridden
+  const sameSite = isSecure ? 'none' : 'lax'; // 'none' requires secure: true
+
   res.cookie('b2c_accessToken', b2c_accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    httpOnly: false,
+    secure: isSecure,
+    sameSite: sameSite as 'none' | 'lax' | 'strict',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
   });
@@ -80,7 +85,15 @@ router.post('/register', async (req: Request, res: Response) => {
 // POST /logout
 router.post('/logout', async (req: Request, res: Response) => {
   try {
-    res.clearCookie('b2c_accessToken').json({ message: 'Logged out successfully' });
+    const isSecure = process.env.COOKIE_SECURE !== 'false';
+    const sameSite = isSecure ? 'none' : 'lax';
+    
+    res.clearCookie('b2c_accessToken', {
+      httpOnly: false,
+      secure: isSecure,
+      sameSite: sameSite as 'none' | 'lax' | 'strict',
+      path: '/'
+    }).json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
